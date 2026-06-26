@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"agent-desk/internal/ai"
 	"agent-desk/internal/ai/runtime/graphs"
@@ -966,7 +967,11 @@ func workflowPreviewJSON(value any) string {
 	if len(raw) <= maxPreviewBytes {
 		return string(raw)
 	}
-	return string(raw[:maxPreviewBytes])
+	truncated := raw[:maxPreviewBytes]
+	for len(truncated) > 0 && !utf8.Valid(truncated) {
+		truncated = truncated[:len(truncated)-1]
+	}
+	return string(truncated)
 }
 
 func (s *runState) resolveSelector(selector *dsl.VariableSelector) any {
