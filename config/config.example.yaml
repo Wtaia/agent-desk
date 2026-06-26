@@ -1,5 +1,10 @@
 server:
   port: 8083
+  # Public-facing base URL of the server. Required for features that need absolute HTTP URLs,
+  # such as multimodal image recognition (sending image URLs to LLM APIs).
+  # Example: http://192.168.1.100:8083 or https://api.example.com
+  # Leave empty if the server is only accessed via localhost or relative URLs are acceptable.
+  baseUrl: ""
   cors:
     # Browser CORS allowlist. In production, replace this with the actual frontend or embedded-site domains, such as https://support.example.com.
     # Leave it empty to reject cross-origin browser requests. Same-origin and non-browser calls are still supported.

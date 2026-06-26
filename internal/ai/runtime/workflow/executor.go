@@ -14,6 +14,7 @@ import (
 
 	"agent-desk/internal/ai"
 	"agent-desk/internal/ai/runtime/graphs"
+	"agent-desk/internal/ai/runtime/internal/impl/adapter"
 	"agent-desk/internal/ai/runtime/internal/impl/retrievers"
 	"agent-desk/internal/ai/workflow/dsl"
 	workflowregistry "agent-desk/internal/ai/workflow/registry"
@@ -260,7 +261,7 @@ func (e *Executor) executeNode(ctx context.Context, state *runState, node dsl.No
 			"conversationId":    state.input.Conversation.ID,
 			"messageId":         state.input.UserMessage.ID,
 			"aiAgentId":         state.input.AIAgent.ID,
-			"userMessage":       strings.TrimSpace(state.input.UserMessage.Content),
+			"userMessage":       strings.TrimSpace(utils.BuildRuntimeMessageText(state.input.UserMessage.MessageType, state.input.UserMessage.Content)),
 			"knowledgeBaseIds":  utils.SplitInt64s(state.input.AIAgent.KnowledgeIDs),
 			"conversationState": state.input.Conversation.Status,
 		})
@@ -304,7 +305,7 @@ func (e *Executor) executeNode(ctx context.Context, state *runState, node dsl.No
 func (e *Executor) executeConversationUnderstanding(state *runState, node dsl.Node) error {
 	rawMessage := strings.TrimSpace(toString(state.resolveInput(node, "userMessage")))
 	if rawMessage == "" {
-		rawMessage = state.input.UserMessage.Content
+		rawMessage = utils.BuildRuntimeMessageText(state.input.UserMessage.MessageType, state.input.UserMessage.Content)
 	}
 	understanding := understandConversationMessage(rawMessage)
 	state.setNodeVars(node.ID, map[string]any{
@@ -758,7 +759,7 @@ func (e *Executor) executeLLMReply(ctx context.Context, state *runState, node ds
 	}
 	userPrompt := strings.TrimSpace(toString(state.resolveInput(node, "userMessage")))
 	if userPrompt == "" {
-		userPrompt = strings.TrimSpace(state.input.UserMessage.Content)
+		userPrompt = strings.TrimSpace(utils.BuildRuntimeMessageText(state.input.UserMessage.MessageType, state.input.UserMessage.Content))
 	}
 	knowledgeItems := toString(state.resolveInput(node, "knowledgeItems"))
 	systemPrompt := strings.TrimSpace(state.input.AIAgent.SystemPrompt)
@@ -772,7 +773,7 @@ func (e *Executor) executeLLMReply(ctx context.Context, state *runState, node ds
 	if knowledgeItems != "" {
 		userPrompt = userPrompt + "\n\nKnowledge context:\n" + knowledgeItems
 	}
-	result, err := ai.LLM.ChatWithConfig(ctx, state.input.AIConfig, systemPrompt, userPrompt)
+	result, err := ai.LLM.ChatWithConfigAndImages(ctx, state.input.AIConfig, systemPrompt, userPrompt, adapter.ResolveMessageImageURLs(&state.input.UserMessage))
 	if err != nil {
 		return err
 	}

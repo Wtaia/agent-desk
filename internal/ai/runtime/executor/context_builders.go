@@ -19,7 +19,7 @@ func buildRunMessages(ctx context.Context, req RunInput, summary *RunResult, col
 	if collector != nil {
 		collector.Data.Input.HistoryMessageCount = len(history.Messages)
 		collector.Data.Input.KnowledgeBaseIDs = utils.SplitInt64s(req.AIAgent.KnowledgeIDs)
-		collector.Data.Input.CurrentUserMessagePreview = preview(req.UserMessage.Content, 120)
+		collector.Data.Input.CurrentUserMessagePreview = preview(utils.BuildRuntimeMessageText(req.UserMessage.MessageType, req.UserMessage.Content), 120)
 	}
 	messages := make([]*schema.Message, 0, len(history.Messages)+3)
 	messages = append(messages, history.Messages...)
@@ -30,7 +30,10 @@ func buildRunMessages(ctx context.Context, req RunInput, summary *RunResult, col
 		}
 		return messages
 	}
-	messages = append(messages, schema.UserMessage(strings.TrimSpace(req.UserMessage.Content)))
+	currentUserMsg := adapter.BuildCurrentUserMessage(&req.UserMessage)
+	if currentUserMsg != nil {
+		messages = append(messages, currentUserMsg)
+	}
 	return messages
 }
 

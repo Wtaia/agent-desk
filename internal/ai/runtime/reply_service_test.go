@@ -47,6 +47,16 @@ func TestReplyEligibilityCanReply(t *testing.T) {
 	if eligibility.CanReply(conversation, message, aiAgent) {
 		t.Fatalf("expected blank message to be rejected")
 	}
+
+	message = models.Message{
+		SenderType:  enums.IMSenderTypeCustomer,
+		MessageType: enums.IMMessageTypeImage,
+		Content:     "",
+		Payload:     `{"assetId":"abc-123","provider":"local","storageKey":"images/photo.jpg"}`,
+	}
+	if !eligibility.CanReply(conversation, message, aiAgent) {
+		t.Fatalf("expected image message with payload to be replyable")
+	}
 }
 
 func TestResolveReplyTimeout(t *testing.T) {

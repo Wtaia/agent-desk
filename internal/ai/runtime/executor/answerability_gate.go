@@ -145,7 +145,8 @@ func (g *KnowledgeAnswerabilityGate) retrieveKnowledge(ctx context.Context, stat
 	}
 	gate := g.withDefaults()
 	req := state.Input.Request
-	if isRuntimeActionIntent(req.UserMessage.Content) {
+	messageText := utils.BuildRuntimeMessageText(req.UserMessage.MessageType, req.UserMessage.Content)
+	if isRuntimeActionIntent(messageText) {
 		state.SkipGate = true
 		state.recordAnswerability(answerabilityStatusSkipped, "runtime action intent", nil)
 		return state, nil
@@ -170,14 +171,14 @@ func (g *KnowledgeAnswerabilityGate) retrieveKnowledge(ctx context.Context, stat
 		state.recordAnswerability(answerabilityStatusSkipped, "no knowledge configured", nil)
 		return state, nil
 	}
-	query := strings.TrimSpace(req.UserMessage.Content)
+	query := strings.TrimSpace(messageText)
 	if query == "" {
 		state.Decision = buildKnowledgeNoContextDecision(req.AIAgent, knowledgeIDs)
 		state.recordAnswerability(answerabilityStatusNoContext, "empty user question", nil)
 		return state, nil
 	}
 	retrieveOptions := retrievers.DefaultKnowledgeRetrieveOptions()
-	retrieveOptions.QueryPreview = preview(req.UserMessage.Content, 120)
+	retrieveOptions.QueryPreview = preview(messageText, 120)
 	result, err := retriever.RetrieveContextByOptions(ctx, retrieveOptions, query)
 	if err != nil {
 		state.Decision = buildKnowledgeRetrievalErrorDecision(req.AIAgent, knowledgeIDs)

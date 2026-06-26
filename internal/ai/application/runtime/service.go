@@ -10,7 +10,6 @@ import (
 	workflowexecutor "agent-desk/internal/ai/runtime/workflow"
 	"agent-desk/internal/models"
 	"agent-desk/internal/pkg/errorsx"
-	"agent-desk/internal/pkg/utils"
 	"agent-desk/internal/repositories"
 
 	"github.com/mlogclub/simple/sqls"
@@ -38,7 +37,6 @@ func NewService() *Service {
 }
 
 func (s *Service) Run(ctx context.Context, req Request) (*Summary, error) {
-	req.UserMessage.Content = utils.BuildRuntimeMessageText(req.UserMessage.MessageType, req.UserMessage.Content)
 	aiAgent, workflow, err := prepareWorkflowAgent(req.AIAgent)
 	if err != nil {
 		_, _ = writeWorkflowPrepareFailedRun(req, err.Error())

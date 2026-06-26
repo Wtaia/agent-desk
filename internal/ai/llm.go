@@ -34,6 +34,10 @@ func (s *llm) Chat(ctx context.Context, systemPrompt string, userPrompt string) 
 }
 
 func (s *llm) ChatWithConfig(ctx context.Context, config models.AIConfig, systemPrompt string, userPrompt string) (*ChatCompletionResult, error) {
+	return s.ChatWithConfigAndImages(ctx, config, systemPrompt, userPrompt, nil)
+}
+
+func (s *llm) ChatWithConfigAndImages(ctx context.Context, config models.AIConfig, systemPrompt string, userPrompt string, imageURLs []string) (*ChatCompletionResult, error) {
 	messages := make([]openai.ChatCompletionMessageParamUnion, 0, 2)
 	if strs.IsNotBlank(systemPrompt) {
 		messages = append(messages, openai.ChatCompletionMessageParamUnion{
@@ -44,13 +48,7 @@ func (s *llm) ChatWithConfig(ctx context.Context, config models.AIConfig, system
 			},
 		})
 	}
-	messages = append(messages, openai.ChatCompletionMessageParamUnion{
-		OfUser: &openai.ChatCompletionUserMessageParam{
-			Content: openai.ChatCompletionUserMessageParamContentUnion{
-				OfString: openai.String(userPrompt),
-			},
-		},
-	})
+	messages = append(messages, buildUserMessage(userPrompt, imageURLs))
 
 	params := openai.ChatCompletionNewParams{
 		Messages: messages,
@@ -78,6 +76,34 @@ func (s *llm) ChatWithConfig(ctx context.Context, config models.AIConfig, system
 		PromptTokens:     int(chatResp.Usage.PromptTokens),
 		CompletionTokens: int(chatResp.Usage.CompletionTokens),
 	}, nil
+}
+
+func buildUserMessage(userPrompt string, imageURLs []string) openai.ChatCompletionMessageParamUnion {
+	if len(imageURLs) == 0 {
+		return openai.ChatCompletionMessageParamUnion{
+			OfUser: &openai.ChatCompletionUserMessageParam{
+				Content: openai.ChatCompletionUserMessageParamContentUnion{
+					OfString: openai.String(userPrompt),
+				},
+			},
+		}
+	}
+	parts := make([]openai.ChatCompletionContentPartUnionParam, 0, 1+len(imageURLs))
+	if strings.TrimSpace(userPrompt) != "" {
+		parts = append(parts, openai.TextContentPart(userPrompt))
+	}
+	for _, imageURL := range imageURLs {
+		parts = append(parts, openai.ImageContentPart(openai.ChatCompletionContentPartImageImageURLParam{
+			URL: imageURL,
+		}))
+	}
+	return openai.ChatCompletionMessageParamUnion{
+		OfUser: &openai.ChatCompletionUserMessageParam{
+			Content: openai.ChatCompletionUserMessageParamContentUnion{
+				OfArrayOfContentParts: parts,
+			},
+		},
+	}
 }
 
 func applyProviderSpecificChatParams(params *openai.ChatCompletionNewParams, config models.AIConfig) {

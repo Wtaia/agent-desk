@@ -30,8 +30,9 @@ type WxWorkNotifyConfig struct {
 }
 
 type ServerConfig struct {
-	Port int        `yaml:"port"`
-	CORS CORSConfig `yaml:"cors"`
+	Port    int        `yaml:"port"`
+	BaseURL string     `yaml:"baseUrl"`
+	CORS    CORSConfig `yaml:"cors"`
 }
 
 func (s ServerConfig) Address() string {

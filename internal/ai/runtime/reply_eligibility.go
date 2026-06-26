@@ -23,7 +23,7 @@ func (e *replyEligibility) CanReply(conversation models.Conversation, message mo
 	if aiAgent.ServiceMode == enums.IMConversationServiceModeHumanOnly {
 		return false
 	}
-	if strs.IsBlank(message.Content) {
+	if strs.IsBlank(message.Content) && strs.IsBlank(message.Payload) {
 		return false
 	}
 	return true
